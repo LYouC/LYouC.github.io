@@ -1,158 +1,159 @@
+const SVG_NS = "http://www.w3.org/2000/svg";
+const SVG_XLINK = "http://www.w3.org/1999/xlink";
+let rid = null;
+let gon = 7;// 3,4,5,6....
 
-Loadr = new (function Loadr(id) {
-    // # Defines
-    const max_size = 24;
-    const max_particles = 1500;
-    const min_vel = 20;
-    const max_generation_per_frame = 10;
+const colors = [
+  "#ba3763",
+  "#d34076",
+  "#dbb0cc",
+  "#fddafa",
+  "#fef2fe",
+  "#eec0db",
+  "#ca809a",
+  "#e9d8e8"
+];
 
-    // #Variables
-    // sometimes i wrote code horrible enouhg to make eyes bleed 
-    var canvas = document.getElementById(id);
-    var ctx = canvas.getContext('2d');
-    var height = canvas.height;
-    var center_y = height / 2;
-    var width = canvas.width;
-    var center_x = width / 2;
-    var animate = true;
-    var particles = [];
-    var last = Date.now(), now = 0;
-    var died = 0, len = 0, dt;
+let m = { x: 0, y: 0 };
+let previous = { x: 0, y: 0 };
+let scale = 1;
+let bool = false;
 
-    function isInsideHeart(x, y) {
-        x = ((x - center_x) / (center_x)) * 3;
-        y = ((y - center_y) / (center_y)) * -3;
-        // Simplest Equation of lurve
-        var x2 = x * x;
-        var y2 = y * y;
-        // Simplest Equation of lurve
+class Flower {
+  constructor(n, pos, scale, parent) {
+    this.n = n;
+    this.scale = scale;
+    this.pos = pos;
+    this.width = 40;
+    this.height = 40;
+    this.color = colors[~~(Math.random() * colors.length)];
+    this.parent = parent;
 
-        return (Math.pow((x2 + y2 - 1), 3) - (x2 * (y2 * y)) < 0);
+    this.markup();
+  }
 
+  markup() {
+    this.G = document.createElementNS(SVG_NS, "g");
+    this.G.setAttribute("style", `--scale:${this.scale};`);
+    let rot = ~~(Math.random() * 180);
+    this.G.setAttributeNS(
+      null,
+      "transform",
+      `translate(${this.pos.x},${this.pos.y}) rotate(${rot})`
+    );
+    this.G.setAttributeNS(null, "fill", this.color);
+    let ga = document.createElementNS(SVG_NS, "g");
+    ga.setAttribute("class", "a");
+
+    for (let i = 0; i < 2; i++) {
+      // left, right
+      let g = document.createElementNS(SVG_NS, "g");
+      for (let j = 0; j < this.n; j++) {
+        let use = document.createElementNS(SVG_NS, "use");
+        use.setAttributeNS(SVG_XLINK, "xlink:href", `#petal${this.n}`);
+        use.setAttributeNS(null, "width", this.width);
+        use.setAttributeNS(null, "height", this.height);
+
+        g.appendChild(use);
+      }
+      ga.appendChild(g);
     }
+    this.G.appendChild(ga);
 
-    function random(size, freq) {
-        var val = 0;
-        var iter = freq;
-
-        do {
-            size /= iter;
-            iter += freq;
-            val += size * Math.random();
-        } while (size >= 1);
-
-        return val;
-    }
-
-    function Particle() {
-        var x = center_x;
-        var y = center_y;
-        var size = ~~random(max_size, 2.4);
-        var x_vel = ((max_size + min_vel) - size) / 2 - (Math.random() * ((max_size + min_vel) - size));
-        var y_vel = ((max_size + min_vel) - size) / 2 - (Math.random() * ((max_size + min_vel) - size));
-        var nx = x;
-        var ny = y;
-        var r, g, b, a = 0.05 * size;
-
-        this.draw = function () {
-            r = Math.min(~~(280 * (x / width)+20),255);
-            g = ~~(250 * (1 - (y / height)));
-            b = ~~(250 - r);
-            ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2, true);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        this.move = function (dt) {
-
-            nx += x_vel * dt;
-            ny += y_vel * dt;
-            if (!isInsideHeart(nx, ny)) {
-                if (!isInsideHeart(nx, y)) {
-                    x_vel *= -1;
-                    return;
-                }
-
-                if (!isInsideHeart(x, ny)) {
-                    y_vel *= -1;
-                    return;
-                }
-                // Lets do the crazy furbidden
-                x_vel = -1 * y_vel;
-                y_vel = -1 * x_vel;
-                return;
-            }
-
-            x = nx;
-            y = ny;
-        }
-
-    }
-
-    function movementTick() {
-        var len = particles.length;
-        var dead = max_particles - len;
-        for (var i = 0; i < dead && i < max_generation_per_frame; i++) {
-            particles.push(new Particle());
-        }
-
-        // Update the date
-        now = Date.now();
-        dt = last - now;
-        dt /= 1000;
-        last = now;
-        particles.forEach(function (p) {
-            p.move(dt);
-        });
-    }
-
-    function tick() {
-
-        ctx.clearRect(0, 0, width, height);
-        particles.forEach(function (p) {
-            p.draw();
-        });
-
-        requestAnimationFrame(tick);
-    }
-
-    this.start = function () {
-
-    }
-
-    this.done = function () {
-
-    }
-
-    setInterval(movementTick, 16);
-    tick();
-
-})("loader");
-
-document.addEventListener('DOMContentLoaded', function () {
-    const originalMessage = 'loading  ';
-    const newMessage = '  I Love You';
-    const h1Element = document.getElementById('love-message');
-
-    let count = 0;
-
-    (function typeMessage() {
-        
-        if (count>=newMessage.length) return;
-        count++;
-        // 获取当前需要移除的原始字符和显示的新字符
-        const oldStr = originalMessage.slice(0, originalMessage.length - count>=0?originalMessage.length - count:0);
-        const newChar = newMessage.slice(0, count);
-
-        // 从原始消息中移除一个字符并添加新字符到H1元素的内容
-        h1Element.textContent = `${oldStr}${newChar}`;
+    this.parent.appendChild(this.G);
+  }
+}
 
 
-
-        // 延迟一段时间显示下一个字符
-        setTimeout(typeMessage, 500); // 每个字符延迟300毫秒
-
-    })();
+svg.addEventListener("mousedown", e => {
+  // clear the canvas
+  while (svg.lastChild) {
+    svg.removeChild(svg.lastChild);
+  }
+  // if bool == true I can draw
+  bool = true;
 });
+
+svg.addEventListener("mouseup", e => {
+  bool = false;
+  previous = {};
+});
+
+svg.addEventListener("mousemove", e => {
+  if (bool) {
+    m = oMousePosSVG(e);
+    // number of petals
+    let n = 2 + ~~(Math.random() * 4);
+    // set the scale
+    if (previous.x) {
+      let d = dist(m, previous);
+      scale = d / 30;
+    } else {
+      scale = 1;
+    }
+
+    let flower = new Flower(n, { x: m.x, y: m.y }, scale, svg);
+    setTimeout(() => {
+      flower.G.setAttribute("class", `_${flower.n}`);
+    }, 50);
+
+    previous.x = m.x;
+    previous.y = m.y;
+  } //if bool
+});
+
+function oMousePosSVG(e) {
+  var p = svg.createSVGPoint();
+  p.x = e.clientX;
+  p.y = e.clientY;
+  var ctm = svg.getScreenCTM().inverse();
+  var p = p.matrixTransform(ctm);
+  return p;
+}
+
+function dist(p1, p2) {
+  let dx = p2.x - p1.x;
+  let dy = p2.y - p1.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+///////// Initial polygon //////////////
+
+function algorithmPoly(gon, R) {
+  let points = [];
+  for (let a = 0; a < 2 * Math.PI; a += 0.1) {
+    let r =
+      R *
+      Math.cos(Math.PI / gon) /
+      Math.cos(a % (2 * Math.PI / gon) - Math.PI / gon);
+
+    let x = 5000 + r * Math.cos(a);
+    let y = 5000 + r * Math.sin(a);
+    points.push({ x: x, y: y, r: 5 });
+  }
+  return points;
+}
+
+let points = algorithmPoly(gon, 2500);
+
+let frames = 0;
+function Frame() {
+  rid = window.requestAnimationFrame(Frame);
+
+  if (frames >= points.length) {
+    window.cancelAnimationFrame(rid);
+    rid = null;
+  }
+  m = points[frames];
+  let n = 2 + ~~(Math.random() * 4);
+  scale = ~~(Math.random() * 12) + 3;
+
+  let flower = new Flower(n, { x: m.x, y: m.y }, scale, svg);
+  setTimeout(() => {
+    flower.G.setAttribute("class", `_${flower.n}`);
+  }, 50);
+
+  frames++;
+}
+
+Frame();
